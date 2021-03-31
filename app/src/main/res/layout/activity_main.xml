@@ -5,14 +5,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".views.MainActivity">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/subscribe_event_list"
+        android:id="@+id/main_comment_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layoutManager="LinearLayoutManager"
-        tools:context=".main.ui.events.SubscribeFragment"
-        tools:listitem="@layout/message_item_list" />
+        tools:context=".views.MainActivity"
+        tools:listitem="@layout/comment_item_list" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

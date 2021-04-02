@@ -37,7 +37,6 @@ public class RetrofitFactory {
     }
 
     public static CommentService getCommentService(){
-        Log.d(TAG, "getCommentService: ");
         return getRetrofitClient().create(CommentService.class);
     }
 }

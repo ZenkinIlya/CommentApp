@@ -10,4 +10,5 @@ public interface ICommentListPresenter {
     void searchCommentInDatabase(ArrayList<Comment> comments);
     void addCommentInDatabase(Comment comment);
     void updateCommentInDatabase(Comment comment);
+    void deleteDatabase();
 }

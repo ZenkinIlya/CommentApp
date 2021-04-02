@@ -26,4 +26,7 @@ public interface CommentDao {
 
     @Update
     void update(Comment comment);
+
+    @Query("DELETE FROM comment")
+    void deleteAll();
 }

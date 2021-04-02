@@ -9,4 +9,6 @@ public interface IMainView {
     void onGetCommentListFromServer(ArrayList<Comment> comments);
     void onGetCommentListFromDatabase(ArrayList<Comment> comments);
     void onShowToast(String message);
+    void onSearchCommentInDatabaseError(Comment comment);
+    void onSearchCommentInDatabaseSuccess(Comment comment);
 }

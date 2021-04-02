@@ -8,10 +8,6 @@ import java.util.Objects;
 @Entity
 public class Comment {
 
-    //PrimaryKey for Room
-    @PrimaryKey(autoGenerate = true)
-    private long idKey;
-
     //Время считывания комментария с сервера
     private long time;
 
@@ -19,6 +15,7 @@ public class Comment {
     private int postId;
 
     //Идентификатор комментария
+    @PrimaryKey
     private int id;
 
     //Имя пользователя
@@ -36,14 +33,6 @@ public class Comment {
         this.name = name;
         this.email = email;
         this.body = body;
-    }
-
-    public long getIdKey() {
-        return idKey;
-    }
-
-    public void setIdKey(long idKey) {
-        this.idKey = idKey;
     }
 
     public long getTime() {
@@ -97,8 +86,7 @@ public class Comment {
     @Override
     public String toString() {
         return "Comment{" +
-                "idKey=" + idKey +
-                ", time=" + time +
+                "time=" + time +
                 ", postId=" + postId +
                 ", id=" + id +
                 ", name='" + name + '\'' +

@@ -22,6 +22,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
     private String timeOfReceiveComments;
 
     public void setComments(ArrayList<Comment> inputComments) {
+        comments.clear();
         comments.addAll(inputComments);
         setTimeOfReceiveComments();
         notifyDataSetChanged();

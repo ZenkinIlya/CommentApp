@@ -1,6 +1,5 @@
-package ru.zenkin.commentapp.retrofit.services;
+package ru.zenkin.commentapp.network.services;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -10,5 +9,5 @@ import ru.zenkin.commentapp.model.Comment;
 
 public interface CommentService {
     @GET("comments")
-    public Observable<List<Comment>> getComments(@Query("postId") int postId);
+    public Observable<List<Comment>> getComments(@Query("postId") Long postId);
 }

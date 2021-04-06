@@ -3,150 +3,145 @@ package ru.zenkin.commentapp.presenters;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.ObservableEmitter;
 import io.reactivex.rxjava3.core.ObservableOnSubscribe;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import ru.zenkin.commentapp.App;
 import ru.zenkin.commentapp.database.AppDatabase;
 import ru.zenkin.commentapp.model.Comment;
-import ru.zenkin.commentapp.retrofit.repositories.CommentRepository;
+import ru.zenkin.commentapp.network.repositories.CommentRepository;
 import ru.zenkin.commentapp.views.IMainView;
 
 public class CommentListPresenter implements ICommentListPresenter {
 
     private static final String TAG = "tgCommentListPres";
     private final IMainView iMainView;
-    private AppDatabase db;
+    private final AppDatabase db;
     private final CommentRepository commentRepository;
+    private final CompositeDisposable compositeDisposable;
 
     public CommentListPresenter(IMainView iMainView) {
         this.iMainView = iMainView;
         this.db = App.getInstance().getAppDatabase();
         commentRepository = new CommentRepository();
+        compositeDisposable = new CompositeDisposable();
     }
 
     @Override
     public void getCommentListFromServer() {
         Log.i(TAG, "getCommentListFromServer()");
 
-        iMainView.onShowLoading(true);
+        Disposable subscribe = Observable.interval(0,60, TimeUnit.SECONDS)
+                .map(aLong -> getCount(aLong))  //Получаем postId
+                .doOnNext(count -> Log.d(TAG, "getCommentListFromServer: count = " + count))
+                .observeOn(AndroidSchedulers.mainThread())  //Показ значка загрузки в main потоке
+                .doOnNext(aLong -> iMainView.onShowLoading(true))
+                .observeOn(Schedulers.io()) //Поход на сервер и вывод в лог выполняется в бекграунде
+                .flatMap(integerObservable -> commentRepository.getComments(integerObservable))
+                .flatMap(commentList -> Observable.fromIterable(commentList))
+                .map(comment -> {
+                    comment.setTime(getCurrentTime());
+                    return comment;
+                })
+                .buffer(5)  //Собираю в кучу комменты. На выходе получаю Observable<List<Comment>>
+                // При toList doOnNext не доступен
+                .doOnNext(commentList -> {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    for (Comment comment : commentList) {
+                        stringBuilder.append(comment.getId()).append(" ");
+                    }
+                    Log.d(TAG, "getCommentListFromServer: id комментариев загруженных с сервера = " + stringBuilder.toString());
 
-        ArrayList<Integer> arrayList = new ArrayList<>();
-        for (int i = 1; i < 31; i++) {
-            arrayList.add(i);
+                })
+                .subscribeOn(Schedulers.io())  //Влияет на первые три этапа (interval, map, doOnNext)
+                .observeOn(AndroidSchedulers.mainThread()) //Методы Observer выполняются в main потоке
+                .subscribe(
+                        commentList -> {
+                            iMainView.onGetCommentListFromServer((ArrayList<Comment>) commentList);
+                            iMainView.onShowLoading(false);
+                            iMainView.onShowToast("Комментарии загружены с сервера"); },
+                        throwable -> {
+                            Log.e(TAG, "getCommentListFromServer: " + throwable.getLocalizedMessage());
+                            iMainView.onShowLoading(false);
+                            iMainView.onShowToast(throwable.getLocalizedMessage()); }
+                            );
+
+        compositeDisposable.add(subscribe);
+    }
+
+    private long getCurrentTime() {
+        Calendar calendar = Calendar.getInstance();
+        return calendar.getTimeInMillis();
+    }
+
+    @Override
+    public void disposeAll() {
+        if (!compositeDisposable.isDisposed()){
+            Log.d(TAG, "disposeAll: compositeDisposable.clear()");
+            compositeDisposable.clear();
         }
+    }
 
-        Observable.fromIterable(arrayList)
-                .repeatWhen(completed -> completed.delay(10, TimeUnit.SECONDS))
-                .doOnNext(integer -> Log.d(TAG, "getCommentListFromServer: integer = " +integer))
-                .concatMap(integer -> commentRepository.getComments(integer))
-                .subscribeOn(Schedulers.io())  //Запрос в io потоке
-                .doOnNext(commentList -> {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    for (Comment comment: commentList){
-                        stringBuilder.append(comment.getId()).append(" ");
-                    }
-                    Log.d(TAG, "getCommentListFromServer: id комментариев загруженных с сервера = " + stringBuilder.toString());
-
-                })
-                .observeOn(AndroidSchedulers.mainThread()) //Все остальное в main потоке
-                .subscribe(
-                        commentList -> {
-                            iMainView.onGetCommentListFromServer((ArrayList<Comment>) commentList);
-                            },
-                        error -> {
-                            Log.e(TAG, "getCommentListFromServer: " + error.getLocalizedMessage());
-                            iMainView.onShowLoading(false);
-                            iMainView.onShowToast(error.getLocalizedMessage());
-                        },
-                        () -> {
-                            Log.i(TAG, "getCommentListFromServer: Completed");
-                            iMainView.onShowLoading(false);
-                            iMainView.onShowToast("Комментарии загружены с сервера");
-                        });
-
-
-/*        commentRepository.getComments(1)
-                .repeatWhen(completed -> completed.delay(5, TimeUnit.SECONDS))
-                .subscribeOn(Schedulers.io())  //Запрос в io потоке
-                .doOnNext(commentList -> {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    for (Comment comment: commentList){
-                        stringBuilder.append(comment.getId()).append(" ");
-                    }
-                    Log.d(TAG, "getCommentListFromServer: id комментариев загруженных с сервера = " + stringBuilder.toString());
-
-                })
-                .observeOn(AndroidSchedulers.mainThread()) //Все остальное в main потоке
-                .subscribe(
-                        commentList -> {
-                            iMainView.onGetCommentListFromServer((ArrayList<Comment>) commentList);
-                            Log.d(TAG, "getCommentListFromServer: count = ");
-                        },
-                        error -> {
-                            Log.e(TAG, "getCommentListFromServer: " + error.getLocalizedMessage());
-                            iMainView.onShowLoading(false);
-                            iMainView.onShowToast(error.getLocalizedMessage());
-                        },
-                        () -> {
-                            Log.i(TAG, "getCommentListFromServer: Completed");
-                            iMainView.onShowLoading(false);
-                            iMainView.onShowToast("Комментарии загружены с сервера");
-                        });*/
+    //Вывод числа от 1 до 32
+    private Long getCount(Long aLong) {
+        long result;
+        aLong++;
+        result = aLong % 32;
+        if (result == 0){
+            result = 32;
+        }
+        return result;
     }
 
     @Override
     public void getCommentListFromDatabase() {
         Log.i(TAG, "getCommentListFromDatabase()");
 
-        iMainView.onShowLoading(true);
-
-        //Запрос будет выполнен не в UI потоке
+        //Запрос будет выполнен не в бекграунд потоке
         //Работает как слушатель, реагирует на любое изменение БД
-        db.commentDao().getAll()
+        Disposable subscribe = db.commentDao().getAll()
                 .doOnNext(commentList -> {
                     StringBuilder stringBuilder = new StringBuilder();
-                    for (Comment comment: commentList){
+                    for (Comment comment : commentList) {
                         stringBuilder.append(comment.getId()).append(" ");
                     }
                     Log.d(TAG, "getCommentListFromDatabase: id комментариев загруженных из БД = " + stringBuilder.toString());
 
                 })
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(commentList -> iMainView.onGetCommentListFromDatabase((ArrayList<Comment>) commentList),
+                .subscribe(
+                        commentList -> iMainView.onGetCommentListFromDatabase((ArrayList<Comment>) commentList),
                         error -> {
                             Log.e(TAG, "getCommentListFromDatabase: " + error.getLocalizedMessage());
-                            iMainView.onShowLoading(false);
                             iMainView.onShowToast(error.getLocalizedMessage());
                         },
                         () -> {
                             Log.i(TAG, "getCommentListFromServer: Completed");
-                            iMainView.onShowLoading(false);
                             iMainView.onShowToast("Комментарии загружены из базы");
                         });
+
+        compositeDisposable.add(subscribe);
     }
 
     @Override
     public void searchCommentInDatabase(ArrayList<Comment> comments) {
         Log.d(TAG, "searchCommentInDatabase()");
 
-        iMainView.onShowLoading(true);
-
         /*Ищем комментарий в БД с таким же id как у комментариев из полученного списка*/
         for (Comment comment: comments){
-            db.commentDao().getById(comment.getId())
+            Disposable subscribe = db.commentDao().getById(comment.getId())
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             commentFromDb -> {
                                 Log.d(TAG, "searchCommentInDatabase: Найден комментарий в БД с таким же id = " + comment.getId());
-                                if (!comment.equals(commentFromDb)){
+                                if (!comment.equals(commentFromDb)) {
                                     Log.i(TAG, "searchCommentInDatabase: Комментарий необходимо обновить");
                                     iMainView.onSearchCommentInDatabaseSuccess(comment);
                                 }
@@ -157,6 +152,8 @@ public class CommentListPresenter implements ICommentListPresenter {
                                 iMainView.onSearchCommentInDatabaseError(comment);
                                 iMainView.onShowLoading(false);
                             });
+
+            compositeDisposable.add(subscribe);
         }
     }
 
@@ -164,54 +161,49 @@ public class CommentListPresenter implements ICommentListPresenter {
     public void addCommentInDatabase(Comment comment) {
         Log.d(TAG, "addCommentInDatabase()");
 
-        Observable.create(new ObservableOnSubscribe<Boolean>() {
-            @Override
-            public void subscribe(@NonNull ObservableEmitter<Boolean> emitter) throws Throwable {
-                Log.d(TAG, "addCommentInDatabase: Добавление комментария с id = " + comment.getId());
-                db.commentDao().insert(comment);
-                emitter.onNext(true);
-                emitter.onComplete();
-            }
-        }).subscribeOn(Schedulers.io())
-                .subscribe(aBoolean -> Log.d(TAG, "addCommentInDatabase: " +aBoolean),
-                        throwable -> Log.d(TAG, "addCommentInDatabase: " +throwable.getLocalizedMessage()));
+        Disposable subscribe = Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+                    Log.d(TAG, "addCommentInDatabase: Добавление комментария с id = " + comment.getId());
+                    db.commentDao().insert(comment);
+                    emitter.onNext(true);
+                    emitter.onComplete();
+                })
+                .subscribeOn(Schedulers.io())
+                .subscribe(aBoolean -> Log.d(TAG, "addCommentInDatabase: " + aBoolean),
+                        throwable -> Log.d(TAG, "addCommentInDatabase: " + throwable.getLocalizedMessage()));
+
+        compositeDisposable.add(subscribe);
     }
 
     @Override
     public void updateCommentInDatabase(Comment comment) {
         Log.d(TAG, "updateCommentInDatabase()");
 
-        Observable.create(new ObservableOnSubscribe<Boolean>() {
-            @Override
-            public void subscribe(@NonNull ObservableEmitter<Boolean> emitter) throws Throwable {
-                Log.d(TAG, "addCommentInDatabase: Обновление комментария с id = " + comment.getId());
-                db.commentDao().update(comment);
-                emitter.onNext(true);
-//                emitter.onError(new Exception());
-                emitter.onComplete();
-            }
-        }).subscribeOn(Schedulers.io())
-                .subscribe(
-                        aBoolean -> {
-                            Log.d(TAG, "updateCommentInDatabase: " +aBoolean);},
-                        throwable -> Log.d(TAG, "updateCommentInDatabase: " +throwable.getLocalizedMessage()));
-
-        /*Completable.fromAction(() -> db.commentDao().update(comment))
+        Disposable subscribe = Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+            Log.d(TAG, "addCommentInDatabase: Обновление комментария с id = " + comment.getId());
+            db.commentDao().update(comment);
+            emitter.onNext(true);
+            emitter.onComplete();
+        })
                 .subscribeOn(Schedulers.io())
-                .subscribe();*/
+                .subscribe(
+                        aBoolean -> Log.d(TAG, "updateCommentInDatabase: " + aBoolean),
+                        throwable -> Log.d(TAG, "updateCommentInDatabase: " + throwable.getLocalizedMessage()));
+
+        compositeDisposable.add(subscribe);
     }
 
     @Override
     public void deleteDatabase() {
         Log.d(TAG, "deleteDatabase()");
 
-        Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+        Disposable subscribe = Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
             db.commentDao().deleteAll();
             emitter.onNext(true);
-//                emitter.onError(new Exception());
             emitter.onComplete();
         }).subscribeOn(Schedulers.io())
-                .subscribe(aBoolean -> Log.d(TAG, "deleteDatabase: " +aBoolean),
-                        throwable -> Log.d(TAG, "deleteDatabase: " +throwable.getLocalizedMessage()));
+                .subscribe(aBoolean -> Log.d(TAG, "deleteDatabase: " + aBoolean),
+                        throwable -> Log.d(TAG, "deleteDatabase: " + throwable.getLocalizedMessage()));
+
+        compositeDisposable.add(subscribe);
     }
 }

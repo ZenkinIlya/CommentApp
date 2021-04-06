@@ -11,4 +11,5 @@ public interface ICommentListPresenter {
     void addCommentInDatabase(Comment comment);
     void updateCommentInDatabase(Comment comment);
     void deleteDatabase();
+    void disposeAll();
 }

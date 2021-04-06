@@ -1,13 +1,11 @@
-package ru.zenkin.commentapp.retrofit;
-
-import android.util.Log;
+package ru.zenkin.commentapp.network;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
-import ru.zenkin.commentapp.retrofit.services.CommentService;
+import ru.zenkin.commentapp.network.services.CommentService;
 
 public class RetrofitFactory {
 

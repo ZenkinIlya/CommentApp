@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -14,13 +15,13 @@ import android.widget.Toast;
 import java.util.ArrayList;
 
 import ru.zenkin.commentapp.R;
+import ru.zenkin.commentapp.adapters.Callback;
 import ru.zenkin.commentapp.adapters.CommentAdapter;
-import ru.zenkin.commentapp.database.AppDatabase;
 import ru.zenkin.commentapp.databinding.ActivityMainBinding;
 import ru.zenkin.commentapp.model.Comment;
 import ru.zenkin.commentapp.presenters.CommentListPresenter;
 
-public class MainActivity extends AppCompatActivity implements IMainView {
+public class MainActivity extends AppCompatActivity implements IMainView, Callback {
 
     private static final String TAG = "tgMainAct";
     private ActivityMainBinding bind;
@@ -37,20 +38,31 @@ public class MainActivity extends AppCompatActivity implements IMainView {
         initAdapter();
 
         commentListPresenter = new CommentListPresenter(this);
-
-        //Первоначально загружаем данные из БД
-        commentListPresenter.getCommentListFromDatabase();
-
-        //Обращаемся к серверу в начале работы приложения
-        commentListPresenter.getCommentListFromServer();
     }
 
     private void initAdapter() {
         Log.i(TAG, "initAdapter: Инициализация адаптера");
         commentAdapter = new CommentAdapter();
+        commentAdapter.setCallback(this);
         bind.mainCommentList.setHasFixedSize(true);
         bind.mainCommentList.setLayoutManager(new LinearLayoutManager(this));
         bind.mainCommentList.setAdapter(commentAdapter);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        //При возобновлении работы Activity
+        //Загружаем данные из БД
+        commentListPresenter.getCommentListFromDatabase();
+        //Обращаемся к серверу
+        commentListPresenter.getCommentListFromServer();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        commentListPresenter.disposeAll();
     }
 
     /*Получаем очередной список комментариев с сервера*/
@@ -107,5 +119,12 @@ public class MainActivity extends AppCompatActivity implements IMainView {
             commentListPresenter.deleteDatabase();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onClickComment(Comment comment, View view) {
+        Intent intent = new Intent(this, CommentActivity.class);
+        intent.putExtra("comment", comment);
+        startActivity(intent);
     }
 }

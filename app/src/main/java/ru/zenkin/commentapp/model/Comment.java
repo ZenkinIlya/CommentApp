@@ -3,10 +3,12 @@ package ru.zenkin.commentapp.model;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Objects;
 
 @Entity
-public class Comment {
+public class Comment implements Serializable {
 
     //Время считывания комментария с сервера
     private long time;

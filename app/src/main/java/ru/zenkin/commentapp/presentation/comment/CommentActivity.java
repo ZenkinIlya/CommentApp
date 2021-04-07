@@ -1,25 +1,17 @@
-package ru.zenkin.commentapp.views;
+package ru.zenkin.commentapp.presentation.comment;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
-import ru.zenkin.commentapp.R;
 import ru.zenkin.commentapp.databinding.ActivityCommentBinding;
-import ru.zenkin.commentapp.model.Comment;
+import ru.zenkin.commentapp.models.entities.Comment;
 
 public class CommentActivity extends AppCompatActivity {
 

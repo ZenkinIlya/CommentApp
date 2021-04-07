@@ -1,6 +1,5 @@
-package ru.zenkin.commentapp.adapters;
+package ru.zenkin.commentapp.presentation.commentslist;
 
-import android.telecom.Call;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,25 +9,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Locale;
 
 import ru.zenkin.commentapp.databinding.CommentItemListBinding;
-import ru.zenkin.commentapp.model.Comment;
-import ru.zenkin.commentapp.utils.CommentComparator;
+import ru.zenkin.commentapp.models.entities.Comment;
+import ru.zenkin.commentapp.models.entities.CommentComparator;
 
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHolder> {
 
-    private final ArrayList<Comment> comments = new ArrayList<>();
+    private ArrayList<Comment> comments = new ArrayList<>();
     private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
     private final CommentComparator commentComparator = new CommentComparator();
     private Callback callback;
 
     public void setComments(ArrayList<Comment> inputComments) {
-        comments.clear();
-        comments.addAll(inputComments);
+        comments = inputComments;
         Collections.sort(comments, commentComparator);
         notifyDataSetChanged();
     }

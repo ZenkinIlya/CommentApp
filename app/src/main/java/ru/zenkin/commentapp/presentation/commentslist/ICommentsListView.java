@@ -1,10 +1,10 @@
-package ru.zenkin.commentapp.views;
+package ru.zenkin.commentapp.presentation.commentslist;
 
 import java.util.ArrayList;
 
-import ru.zenkin.commentapp.model.Comment;
+import ru.zenkin.commentapp.models.entities.Comment;
 
-public interface IMainView {
+public interface ICommentsListView {
     void onShowLoading(boolean show);
     void onGetCommentListFromServer(ArrayList<Comment> comments);
     void onGetCommentListFromDatabase(ArrayList<Comment> comments);

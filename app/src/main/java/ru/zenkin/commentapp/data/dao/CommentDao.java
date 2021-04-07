@@ -1,4 +1,4 @@
-package ru.zenkin.commentapp.database.dao;
+package ru.zenkin.commentapp.data.dao;
 
 import androidx.room.Dao;
 import androidx.room.Insert;
@@ -9,7 +9,7 @@ import java.util.List;
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
-import ru.zenkin.commentapp.model.Comment;
+import ru.zenkin.commentapp.models.entities.Comment;
 
 @Dao
 public interface CommentDao {

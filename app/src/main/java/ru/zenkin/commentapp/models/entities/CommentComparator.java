@@ -1,8 +1,8 @@
-package ru.zenkin.commentapp.utils;
+package ru.zenkin.commentapp.models.entities;
 
 import java.util.Comparator;
 
-import ru.zenkin.commentapp.model.Comment;
+import ru.zenkin.commentapp.models.entities.Comment;
 
 public class CommentComparator implements Comparator<Comment> {
     @Override

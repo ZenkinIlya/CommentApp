@@ -1,4 +1,4 @@
-package ru.zenkin.commentapp.presenters;
+package ru.zenkin.commentapp.presentation.commentslist;
 
 import android.util.Log;
 
@@ -13,21 +13,20 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import ru.zenkin.commentapp.App;
-import ru.zenkin.commentapp.database.AppDatabase;
-import ru.zenkin.commentapp.model.Comment;
-import ru.zenkin.commentapp.network.repositories.CommentRepository;
-import ru.zenkin.commentapp.views.IMainView;
+import ru.zenkin.commentapp.repositories.db.AppDatabase;
+import ru.zenkin.commentapp.models.entities.Comment;
+import ru.zenkin.commentapp.repositories.network.CommentRepository;
 
 public class CommentListPresenter implements ICommentListPresenter {
 
     private static final String TAG = "tgCommentListPres";
-    private final IMainView iMainView;
+    private final ICommentsListView iCommentsListView;
     private final AppDatabase db;
     private final CommentRepository commentRepository;
     private final CompositeDisposable compositeDisposable;
 
-    public CommentListPresenter(IMainView iMainView) {
-        this.iMainView = iMainView;
+    public CommentListPresenter(ICommentsListView iCommentsListView) {
+        this.iCommentsListView = iCommentsListView;
         this.db = App.getInstance().getAppDatabase();
         commentRepository = new CommentRepository();
         compositeDisposable = new CompositeDisposable();
@@ -41,7 +40,7 @@ public class CommentListPresenter implements ICommentListPresenter {
                 .map(aLong -> getCount(aLong))  //Получаем postId
                 .doOnNext(count -> Log.d(TAG, "getCommentListFromServer: count = " + count))
                 .observeOn(AndroidSchedulers.mainThread())  //Показ значка загрузки в main потоке
-                .doOnNext(aLong -> iMainView.onShowLoading(true))
+                .doOnNext(aLong -> iCommentsListView.onShowLoading(true))
                 .observeOn(Schedulers.io()) //Поход на сервер и вывод в лог выполняется в бекграунде
                 .flatMap(integerObservable -> commentRepository.getComments(integerObservable))
                 .flatMap(commentList -> Observable.fromIterable(commentList))
@@ -63,13 +62,13 @@ public class CommentListPresenter implements ICommentListPresenter {
                 .observeOn(AndroidSchedulers.mainThread()) //Методы Observer выполняются в main потоке
                 .subscribe(
                         commentList -> {
-                            iMainView.onGetCommentListFromServer((ArrayList<Comment>) commentList);
-                            iMainView.onShowLoading(false);
-                            iMainView.onShowToast("Комментарии загружены с сервера"); },
+                            iCommentsListView.onGetCommentListFromServer((ArrayList<Comment>) commentList);
+                            iCommentsListView.onShowToast("Комментарии загружены с сервера");
+                            iCommentsListView.onShowLoading(false);},
                         throwable -> {
                             Log.e(TAG, "getCommentListFromServer: " + throwable.getLocalizedMessage());
-                            iMainView.onShowLoading(false);
-                            iMainView.onShowToast(throwable.getLocalizedMessage()); }
+                            iCommentsListView.onShowToast(throwable.getLocalizedMessage());
+                            iCommentsListView.onShowLoading(false); }
                             );
 
         compositeDisposable.add(subscribe);
@@ -103,7 +102,6 @@ public class CommentListPresenter implements ICommentListPresenter {
     public void getCommentListFromDatabase() {
         Log.i(TAG, "getCommentListFromDatabase()");
 
-        //Запрос будет выполнен не в бекграунд потоке
         //Работает как слушатель, реагирует на любое изменение БД
         Disposable subscribe = db.commentDao().getAll()
                 .doOnNext(commentList -> {
@@ -116,14 +114,14 @@ public class CommentListPresenter implements ICommentListPresenter {
                 })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        commentList -> iMainView.onGetCommentListFromDatabase((ArrayList<Comment>) commentList),
+                        commentList -> iCommentsListView.onGetCommentListFromDatabase((ArrayList<Comment>) commentList),
                         error -> {
                             Log.e(TAG, "getCommentListFromDatabase: " + error.getLocalizedMessage());
-                            iMainView.onShowToast(error.getLocalizedMessage());
+                            iCommentsListView.onShowToast(error.getLocalizedMessage());
                         },
                         () -> {
                             Log.i(TAG, "getCommentListFromServer: Completed");
-                            iMainView.onShowToast("Комментарии загружены из базы");
+                            iCommentsListView.onShowToast("Комментарии загружены из базы");
                         });
 
         compositeDisposable.add(subscribe);
@@ -143,14 +141,14 @@ public class CommentListPresenter implements ICommentListPresenter {
                                 Log.d(TAG, "searchCommentInDatabase: Найден комментарий в БД с таким же id = " + comment.getId());
                                 if (!comment.equals(commentFromDb)) {
                                     Log.i(TAG, "searchCommentInDatabase: Комментарий необходимо обновить");
-                                    iMainView.onSearchCommentInDatabaseSuccess(comment);
+                                    iCommentsListView.onSearchCommentInDatabaseSuccess(comment);
+                                }else {
+                                    Log.i(TAG, "searchCommentInDatabase: Комментарий не нуждается в обновлении");
                                 }
-                                iMainView.onShowLoading(false);
                             },
                             error -> {
                                 Log.d(TAG, "searchCommentInDatabase: В БД не найден комментарий с id = " + comment.getId());
-                                iMainView.onSearchCommentInDatabaseError(comment);
-                                iMainView.onShowLoading(false);
+                                iCommentsListView.onSearchCommentInDatabaseError(comment);
                             });
 
             compositeDisposable.add(subscribe);

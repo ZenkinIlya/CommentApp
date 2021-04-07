@@ -1,10 +1,9 @@
-package ru.zenkin.commentapp.model;
+package ru.zenkin.commentapp.models.entities;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
-import java.util.Comparator;
 import java.util.Objects;
 
 @Entity

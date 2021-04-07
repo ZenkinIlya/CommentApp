@@ -1,4 +1,4 @@
-package ru.zenkin.commentapp.views;
+package ru.zenkin.commentapp.presentation.commentslist;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,30 +14,32 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
-import ru.zenkin.commentapp.R;
-import ru.zenkin.commentapp.adapters.Callback;
-import ru.zenkin.commentapp.adapters.CommentAdapter;
-import ru.zenkin.commentapp.databinding.ActivityMainBinding;
-import ru.zenkin.commentapp.model.Comment;
-import ru.zenkin.commentapp.presenters.CommentListPresenter;
+import javax.inject.Inject;
 
-public class MainActivity extends AppCompatActivity implements IMainView, Callback {
+import ru.zenkin.commentapp.App;
+import ru.zenkin.commentapp.R;
+import ru.zenkin.commentapp.databinding.ActivityMainBinding;
+import ru.zenkin.commentapp.models.entities.Comment;
+import ru.zenkin.commentapp.presentation.comment.CommentActivity;
+
+public class CommentsListActivity extends AppCompatActivity implements ICommentsListView, Callback {
 
     private static final String TAG = "tgMainAct";
     private ActivityMainBinding bind;
 
     private CommentAdapter commentAdapter;
-    private CommentListPresenter commentListPresenter;
+
+    @Inject
+    CommentListPresenter commentListPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        App.getComponentsManager().getCommentComponent(this).inject(this);
         super.onCreate(savedInstanceState);
         bind = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(bind.getRoot());
 
         initAdapter();
-
-        commentListPresenter = new CommentListPresenter(this);
     }
 
     private void initAdapter() {

@@ -6,4 +6,4 @@
 
 ## About
 
-App was created within [task](./forReadme/Task.docx)
+App was created within [task](./forReadme/Task.pdf)
